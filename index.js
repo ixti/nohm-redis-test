@@ -9,10 +9,8 @@ var redis = require('redis').createClient();
 // CONFIGURATION ///////////////////////////////////////////////////////////////
 
 
-var USERS_AMOUNT  = 10;         // Amount of users
 var TOPICS_AMOUNT = 100;        // Amount of topics
 var POSTS_AMOUNT  = 1000;       // Amount of posts per topic to create
-var RND_COUNTER   = Date.now(); // Initial state of COUNTER (used by rnd())
 
 
 // INIT ////////////////////////////////////////////////////////////////////////
@@ -24,46 +22,33 @@ nohm.setClient(redis);
 // HELPER FUNCTIONS ////////////////////////////////////////////////////////////
 
 
+var RND_COUNTER = Date.now();
+var DOT_COUNTER = [0, 0];
+
+
 function rnd() {
   RND_COUNTER += 1;
   return RND_COUNTER;
 }
 
 
-function next(arr) {
-  var idx = arr.__idx__;
-
-  if (!arr[idx]) {
-    idx = arr.__idx__ = 0;
-  } else {
-    arr.__idx__ += 1;
+function dot() {
+  if (DOT_COUNTER[0] >= 100) {
+    process.stdout.write('.');
+    DOT_COUNTER[0] = 0;
+    DOT_COUNTER[1] += 1;
   }
 
-  return arr[idx];
+  if (DOT_COUNTER[1] >= 75) {
+    process.stdout.write('\n');
+    DOT_COUNTER[1] = 0;
+  }
+
+  DOT_COUNTER[0] += 1;
 }
 
 
 // MODELS //////////////////////////////////////////////////////////////////////
-
-
-var User = nohm.model('User', {
-  properties: {
-    name: {
-      type: 'string',
-      unique: true,
-      defaultValue: function () { return 'u' + rnd(); }
-    },
-    email: {
-      type: 'string',
-      unique: true,
-      defaultValue: function () { return rnd() + '@nodeca.org'; }
-    },
-    password: {
-      type: 'string',
-      defaultValue: function () { return 'deadbeef'; }
-    }
-  }
-});
 
 
 var Topic = nohm.model('Topic', {
@@ -91,42 +76,27 @@ var Post = nohm.model('Post', {
 // FACTORIES ///////////////////////////////////////////////////////////////////
 
 
-function createUser(cb) {
-  var user = new User();
-  
-  user.save(function (err) {
-    console.log('USER: ' + this.id);
-    cb(err, this);
-  });
-}
-
-
-function createTopic(user, cb) {
+function createTopic(cb) {
   var topic = new Topic();
 
-  // set relations
-  topic.link(user, 'author');
-  
   topic.save(function (err) {
-    console.log('TOPIC: ' + this.id);
+    dot();
     cb(err, this);
   });
 }
 
 
-function createPost(user, topic, parent, cb) {
+function createPost(topic, parent, cb) {
   var post = new Post();
 
   // set relations
-  post.link(user, 'author');
   post.link(topic, 'topic');
-  
   if (parent) {
     post.link(parent, 'parent');
   }
   
   post.save(function (err) {
-    console.log('POST: ' + this.id);
+    dot();
     cb(err, this);
   });
 }
@@ -136,46 +106,33 @@ function createPost(user, topic, parent, cb) {
 
 
 async.waterfall([
-  // create users
-  function (cb) {
-    var fns = [];
-
-    while (fns.length < USERS_AMOUNT) {
-      fns.push(function (cb) {
-        createUser(cb);
-      });
-    }
-
-    async.parallel(fns, cb);
-  },
-  //
   // create topics
-  function (users, cb) {
+  function (cb) {
     var fns = [];
 
     while (fns.length < TOPICS_AMOUNT) {
       fns.push(function (cb) {
-        createTopic(next(users), cb);
+        createTopic(cb);
       });
     }
 
     async.parallel(fns, function (err, topics) {
-      cb(err, users, topics);
+      cb(err, topics);
     });
   },
   //
   // create posts
-  function (users, topics, cb) {
+  function (topics, cb) {
     var fns = [];
 
     topics.forEach(function (topic) {
       var subfns = [function (cb) {
-        createPost(next(users), topic, null, cb);  
+        createPost(topic, null, cb);  
       }];
 
       while (subfns.length < POSTS_AMOUNT) {
         subfns.push(function (parent, cb) {
-          createPost(next(users), topic, parent, cb);
+          createPost(topic, parent, cb);
         });
       }
 
