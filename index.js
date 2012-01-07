@@ -132,9 +132,16 @@ function createUser(cb) {
 
 
 function createTopic(user, cb) {
-  create(Topic, {
+  var topic;
+
+  topic = create(Topic, {
     title: 'Sample topic ' + rnd()
-  }).save(function (err) {
+  });
+
+  // set relations
+  topic.link(user, 'author');
+  
+  topic.save(function (err) {
     console.log('TOPIC: ' + this.id);
     cb(err, this);
   });
@@ -142,10 +149,22 @@ function createTopic(user, cb) {
 
 
 function createPost(user, topic, parent, cb) {
-  create(Post, {
+  var post;
+
+  post = create(Post, {
     title: 'Sample post ' + rnd(),
-  }).save(function (err) {
-    console.log('TOPIC: ' + this.id);
+  });
+
+  // set relations
+  post.link(user, 'author');
+  post.link(topic, 'topic');
+  
+  if (parent) {
+    post.link(parent, 'parent');
+  }
+  
+  post.save(function (err) {
+    console.log('POST: ' + this.id);
     cb(err, this);
   });
 }
