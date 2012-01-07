@@ -1,0 +1,7 @@
+{
+  "name"            : "nohm-redis-test",
+  "version"         : "0.0.0",
+  "dependencies"    : { "async": "0.1.15",
+                        "nohm": "0.7.1",
+                        "redis": "0.7.1" }
+}
