@@ -11,7 +11,7 @@ var redis = require('redis').createClient();
 
 var USERS_AMOUNT  = 10;         // Amount of users
 var TOPICS_AMOUNT = 100;        // Amount of topics
-var POSTS_AMOUNT  = 100;        // Amount of posts per topic to create
+var POSTS_AMOUNT  = 1000;       // Amount of posts per topic to create
 var RND_COUNTER   = Date.now(); // Initial state of COUNTER (used by rnd())
 
 
@@ -43,17 +43,6 @@ function next(arr) {
 }
 
 
-function create(Model, data) {
-  var obj = new Model();
-
-  Object.getOwnPropertyNames(data).forEach(function (key) {
-    obj.p(key, data[key]);
-  });
-
-  return obj;
-}
-
-
 // MODELS //////////////////////////////////////////////////////////////////////
 
 
@@ -62,24 +51,16 @@ var User = nohm.model('User', {
     name: {
       type: 'string',
       unique: true,
-      validations: [
-        ['notEmpty']
-      ]
+      defaultValue: function () { return 'u' + rnd(); }
     },
     email: {
       type: 'string',
       unique: true,
-      validations: [
-        ['notEmpty'],
-        ['email']
-      ]
+      defaultValue: function () { return rnd() + '@nodeca.org'; }
     },
     password: {
       type: 'string',
-      defaultValue: '',
-      validations: [
-        ['length', { min: 6 }]
-      ]
+      defaultValue: function () { return 'deadbeef'; }
     }
   }
 });
@@ -90,9 +71,7 @@ var Topic = nohm.model('Topic', {
     title: {
       type: 'string',
       unique: true,
-      validations: [
-        ['notEmpty']
-      ]
+      defaultValue: function () { return 'Topic #' + rnd(); }
     }
   }
 });
@@ -103,28 +82,19 @@ var Post = nohm.model('Post', {
     title: {
       type: 'string',
       unique: true,
-      validations: [
-        ['notEmpty']
-      ]
+      defaultValue: function () { return 'Post #' + rnd(); }
     }
   }
 });
 
 
-// FCTORIES ////////////////////////////////////////////////////////////////////
+// FACTORIES ///////////////////////////////////////////////////////////////////
 
 
 function createUser(cb) {
-  var name, email;
+  var user = new User();
   
-  name = 'user-' + rnd();
-  email = name + '@nodeca.org';
-
-  create(User, {
-    name: name,
-    email: email,
-    password: 'deadbeef'
-  }).save(function (err) {
+  user.save(function (err) {
     console.log('USER: ' + this.id);
     cb(err, this);
   });
@@ -132,11 +102,7 @@ function createUser(cb) {
 
 
 function createTopic(user, cb) {
-  var topic;
-
-  topic = create(Topic, {
-    title: 'Sample topic ' + rnd()
-  });
+  var topic = new Topic();
 
   // set relations
   topic.link(user, 'author');
@@ -149,11 +115,7 @@ function createTopic(user, cb) {
 
 
 function createPost(user, topic, parent, cb) {
-  var post;
-
-  post = create(Post, {
-    title: 'Sample post ' + rnd(),
-  });
+  var post = new Post();
 
   // set relations
   post.link(user, 'author');
