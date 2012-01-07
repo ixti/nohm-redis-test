@@ -57,6 +57,18 @@ var Topic = nohm.model('Topic', {
       type: 'string',
       unique: true,
       defaultValue: function () { return 'Topic #' + rnd(); }
+    },
+
+    keywords: {
+      type: 'json',
+      defaultValue: function () {
+        var count = Math.floor(Math.random()*25), arr = [];
+        while (count) {
+          count -= 1;
+          arr.push('keyword#' + count);
+        }
+        return arr;
+      }
     }
   }
 });
@@ -68,6 +80,18 @@ var Post = nohm.model('Post', {
       type: 'string',
       unique: true,
       defaultValue: function () { return 'Post #' + rnd(); }
+    },
+
+    pagetext: {
+      type: 'string',
+      defaultValue: function () {
+        var count = Math.floor(Math.random()*200), arr = [];
+        while (count) {
+          count -= 1;
+          arr.push('word#' + count);
+        }
+        return arr.join(' ');
+      }
     }
   }
 });
